@@ -13,6 +13,7 @@ type Screen = "home" | "fillInfo" | "uploadDocuments" | "payment" | "complete";
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [credentials, setCredentials] = useState<any>(null);
 
   const handleStart = () => {
     setCurrentScreen("fillInfo");
@@ -35,7 +36,10 @@ export default function Home() {
     setCurrentScreen("fillInfo");
   };
 
-  const handlePaymentNext = () => {
+  const handlePaymentNext = (credentials: any) => {
+    // Store credentials for the complete screen
+    console.log("Received credentials from payment:", credentials);
+    setCredentials(credentials);
     setCurrentScreen("complete");
   };
 
@@ -46,6 +50,7 @@ export default function Home() {
   const handleRestart = () => {
     setCurrentScreen("home");
     setUserData(null);
+    setCredentials(null);
   };
 
   const renderScreen = () => {
@@ -71,10 +76,13 @@ export default function Home() {
           <PaymentScreen
             onNext={handlePaymentNext}
             onBack={handlePaymentBack}
+            userData={userData!}
           />
         );
       case "complete":
-        return <CompleteScreen onRestart={handleRestart} />;
+        return (
+          <CompleteScreen onRestart={handleRestart} credentials={credentials} />
+        );
       default:
         return <HomeScreen onStart={handleStart} />;
     }

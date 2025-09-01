@@ -145,7 +145,57 @@ Modify the pricing information in `PaymentScreen.tsx` to update the order summar
 
 ### Backend Integration
 
-Replace the dummy API call in `PaymentScreen.tsx` with your actual backend endpoint for blockcert creation.
+The application now integrates with a ZKP backend API through three main endpoints:
+
+#### API Configuration
+
+1. **Set your backend URL** in `src/data/constants.ts`:
+
+   ```typescript
+   export const BASE_URL = "https://your-actual-backend-url.com";
+   ```
+
+2. **Or use environment variable**:
+   Create `.env.local` file:
+   ```
+   NEXT_PUBLIC_API_BASE_URL=https://your-actual-backend-url.com
+   ```
+
+#### API Flow
+
+The payment screen follows a 3-step process:
+
+1. **Step A - Create Issuance Request**
+
+   - `POST /apis/creation/issuance/request`
+   - Submits user data (name, passport, nationality, DOB)
+   - Returns `{ requestId, status: "pending" }`
+
+2. **Step B - Poll Status**
+
+   - `GET /apis/creation/issuance/status/{requestId}`
+   - Polls until status becomes "completed" or "failed"
+   - Returns `{ requestId, status, qrPayload? }`
+
+3. **Step C - Get Credential (Optional)**
+   - `GET /apis/creation/credential/{requestId}`
+   - Fetches the full Verifiable Credential JSON
+   - Returns `{ vc: {...} }`
+
+#### Files Created
+
+- `src/data/constants.ts` - API endpoints and types
+- `src/services/api.ts` - API service with polling logic
+- Updated `src/screens/PaymentScreen.tsx` - Integrated backend calls
+
+#### Error Handling
+
+The application includes comprehensive error handling:
+
+- Network errors are caught and displayed
+- Failed API calls show user-friendly messages
+- Polling timeout protection (30 attempts, 2-second intervals)
+- Request ID tracking for debugging
 
 ## Browser Compatibility
 

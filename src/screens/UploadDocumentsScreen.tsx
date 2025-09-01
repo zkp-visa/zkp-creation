@@ -2,6 +2,14 @@ import React, { useState } from "react";
 import Button from "../components/Button";
 import ProgressBar from "../components/ProgressBar";
 import { DocumentFile } from "../types";
+import {
+  REQUIRED_DOCUMENTS,
+  VERIFICATION_MESSAGES,
+  VERIFICATION_SETTINGS,
+  DOCUMENT_STATUS,
+  SAMPLE_DOCUMENT_NAMES,
+  FILE_SIZE_RANGE,
+} from "../data/screens/UploadDocuments";
 
 interface UploadDocumentsScreenProps {
   onNext: () => void;
@@ -15,13 +23,8 @@ const UploadDocumentsScreen: React.FC<UploadDocumentsScreenProps> = ({
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
   const [verificationStatus, setVerificationStatus] = useState<
     "pending" | "success" | "failed"
-  >("pending");
+  >(DOCUMENT_STATUS.PENDING);
   const [isVerifying, setIsVerifying] = useState(false);
-
-  const requiredDocuments = [
-    { id: "id", name: "Government ID", type: "image/*,.pdf" },
-    { id: "selfie", name: "Selfie Photo", type: "image/*" },
-  ];
 
   const handleFileUpload = (documentId: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -42,11 +45,14 @@ const UploadDocumentsScreen: React.FC<UploadDocumentsScreenProps> = ({
   };
 
   const handleOneTapUpload = () => {
-    const sampleDocuments: DocumentFile[] = requiredDocuments.map((doc) => ({
+    const sampleDocuments: DocumentFile[] = REQUIRED_DOCUMENTS.map((doc) => ({
       id: doc.id,
-      name: `${doc.name.toLowerCase().replace(" ", "_")}.pdf`,
+      name: doc.name.toLowerCase().replace(" ", "_") + ".pdf",
       type: "application/pdf",
-      size: Math.floor(Math.random() * 1000000) + 50000,
+      size:
+        Math.floor(
+          Math.random() * (FILE_SIZE_RANGE.MAX - FILE_SIZE_RANGE.MIN)
+        ) + FILE_SIZE_RANGE.MIN,
       uploaded: true,
     }));
 
@@ -58,14 +64,24 @@ const UploadDocumentsScreen: React.FC<UploadDocumentsScreenProps> = ({
 
     // Simulate verification process with 80-20 chance
     setTimeout(() => {
-      const isSuccess = Math.random() > 0.2; // 80% success rate
-      setVerificationStatus(isSuccess ? "success" : "failed");
+      const isSuccess = Math.random() > 1 - VERIFICATION_SETTINGS.SUCCESS_RATE;
+      setVerificationStatus(
+        isSuccess ? DOCUMENT_STATUS.SUCCESS : DOCUMENT_STATUS.FAILED
+      );
       setIsVerifying(false);
-    }, 2000);
+
+      // Show alert for verification result
+      if (isSuccess) {
+        alert(VERIFICATION_MESSAGES.SUCCESS);
+      } else {
+        alert(VERIFICATION_MESSAGES.FAILED);
+      }
+    }, VERIFICATION_SETTINGS.VERIFICATION_DELAY);
   };
 
-  const isAllDocumentsUploaded = documents.length === requiredDocuments.length;
-  const canProceed = isAllDocumentsUploaded && verificationStatus === "success";
+  const isAllDocumentsUploaded = documents.length === REQUIRED_DOCUMENTS.length;
+  const canProceed =
+    isAllDocumentsUploaded && verificationStatus === DOCUMENT_STATUS.SUCCESS;
 
   return (
     <div className="h-screen bg-gradient-to-br from-[#faf8f0] to-[#f5f0e0] p-4">
@@ -83,7 +99,7 @@ const UploadDocumentsScreen: React.FC<UploadDocumentsScreenProps> = ({
 
         <div className="flex-1 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {requiredDocuments.map((doc) => {
+            {REQUIRED_DOCUMENTS.map((doc) => {
               const uploadedDoc = documents.find((d) => d.id === doc.id);
 
               return (
@@ -140,30 +156,6 @@ const UploadDocumentsScreen: React.FC<UploadDocumentsScreenProps> = ({
               {isVerifying ? "Verifying..." : "Verify Documents"}
             </Button>
           </div>
-
-          {verificationStatus !== "pending" && (
-            <div
-              className={`p-4 rounded-lg mb-4 ${
-                verificationStatus === "success"
-                  ? "bg-green-50 text-green-800 border border-green-200"
-                  : "bg-red-50 text-red-800 border border-red-200"
-              }`}
-              role="alert"
-            >
-              <div className="flex items-center">
-                <span className="font-medium">
-                  {verificationStatus === "success"
-                    ? "✓ Verification Successful"
-                    : "✗ Verification Failed"}
-                </span>
-              </div>
-              <p className="text-sm mt-1">
-                {verificationStatus === "success"
-                  ? "All documents have been verified successfully."
-                  : "Some documents could not be verified. Please try again."}
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mt-4">

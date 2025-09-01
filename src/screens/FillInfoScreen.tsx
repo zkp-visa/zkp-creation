@@ -3,6 +3,13 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import ProgressBar from "../components/ProgressBar";
 import { UserData } from "../types";
+import {
+  FILL_INFO_FIELDS,
+  SAMPLE_USER_DATA_VARIATIONS,
+  FIELD_LABELS,
+  FIELD_PLACEHOLDERS,
+  REQUIRED_FIELDS,
+} from "../data/screens/FillInfo";
 
 interface FillInfoScreenProps {
   onNext: (userData: UserData) => void;
@@ -32,31 +39,25 @@ const FillInfoScreen: React.FC<FillInfoScreenProps> = ({ onNext, onBack }) => {
   };
 
   const handleOneTapFill = () => {
-    const sampleData: UserData = {
-      firstName: "John",
-      lastName: "Doe",
-      email: "john.doe@example.com",
-      phone: "+1 (555) 123-4567",
-      dateOfBirth: "1990-05-15",
-      address: "123 Main Street",
-      city: "New York",
-      state: "NY",
-      zipCode: "10001",
-      occupation: "Software Engineer",
-      company: "Tech Corp",
-    };
-    setUserData(sampleData);
+    // Randomly select one of the variations
+    const randomIndex = Math.floor(
+      Math.random() * SAMPLE_USER_DATA_VARIATIONS.length
+    );
+    const selectedData = SAMPLE_USER_DATA_VARIATIONS[randomIndex];
+    setUserData(selectedData);
   };
 
   const handleNext = () => {
     onNext(userData);
   };
 
-  const isFormValid = userData.firstName && userData.lastName && userData.email;
+  const isFormValid = REQUIRED_FIELDS.every(
+    (field) => userData[field as keyof UserData]
+  );
 
   return (
     <div className="h-screen bg-gradient-to-br from-[#faf8f0] to-[#f5f0e0] p-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8 h-full flex flex-col">
+      <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-8 h-full flex flex-col">
         <ProgressBar currentStep={2} totalSteps={5} className="mb-4" />
 
         <div className="mb-4">
@@ -71,39 +72,48 @@ const FillInfoScreen: React.FC<FillInfoScreenProps> = ({ onNext, onBack }) => {
         <div className="flex-1 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <Input
-              label="First Name"
-              value={userData.firstName}
-              onChange={(value) => handleFieldChange("firstName", value)}
+              label={FIELD_LABELS.FIRST_NAME}
+              value={userData[FILL_INFO_FIELDS.FIRST_NAME]}
+              onChange={(value) =>
+                handleFieldChange(FILL_INFO_FIELDS.FIRST_NAME, value)
+              }
               required
             />
             <Input
-              label="Last Name"
-              value={userData.lastName}
-              onChange={(value) => handleFieldChange("lastName", value)}
+              label={FIELD_LABELS.LAST_NAME}
+              value={userData[FILL_INFO_FIELDS.LAST_NAME]}
+              onChange={(value) =>
+                handleFieldChange(FILL_INFO_FIELDS.LAST_NAME, value)
+              }
               required
             />
             <Input
-              label="Email"
-              type="email"
-              value={userData.email}
-              onChange={(value) => handleFieldChange("email", value)}
+              label={FIELD_LABELS.PASSPORT_NUMBER}
+              value={userData[FILL_INFO_FIELDS.PASSPORT_NUMBER]}
+              onChange={(value) =>
+                handleFieldChange(FILL_INFO_FIELDS.PASSPORT_NUMBER, value)
+              }
+              placeholder={FIELD_PLACEHOLDERS.PASSPORT_NUMBER}
               required
             />
             <Input
-              label="Phone"
-              type="tel"
-              value={userData.phone}
-              onChange={(value) => handleFieldChange("phone", value)}
+              label={FIELD_LABELS.NATIONALITY}
+              value={userData[FILL_INFO_FIELDS.NATIONALITY]}
+              onChange={(value) =>
+                handleFieldChange(FILL_INFO_FIELDS.NATIONALITY, value)
+              }
+              placeholder={FIELD_PLACEHOLDERS.NATIONALITY}
+              required
             />
             <Input
-              label="Occupation"
-              value={userData.occupation}
-              onChange={(value) => handleFieldChange("occupation", value)}
-            />
-            <Input
-              label="Company"
-              value={userData.company}
-              onChange={(value) => handleFieldChange("company", value)}
+              label={FIELD_LABELS.DATE_OF_BIRTH}
+              type="text"
+              value={userData[FILL_INFO_FIELDS.DATE_OF_BIRTH]}
+              onChange={(value) =>
+                handleFieldChange(FILL_INFO_FIELDS.DATE_OF_BIRTH, value)
+              }
+              placeholder={FIELD_PLACEHOLDERS.DATE_OF_BIRTH}
+              required
             />
           </div>
         </div>
