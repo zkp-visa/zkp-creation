@@ -3,6 +3,7 @@ import React from "react";
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
+  type?: "button" | "submit" | "reset";
   variant?: "primary" | "secondary" | "success" | "danger";
   size?: "sm" | "md" | "lg";
   disabled?: boolean;
@@ -12,6 +13,7 @@ interface ButtonProps {
 const Button: React.FC<ButtonProps> = ({
   children,
   onClick,
+  type = "button",
   variant = "primary",
   size = "md",
   disabled = false,
@@ -40,6 +42,7 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClasses} ${className}`}

@@ -8,8 +8,8 @@ interface CompleteScreenProps {
     requestId: string;
     status: string;
     qrPayload?: string;
-    credential?: any;
-    userData?: any;
+    credential?: Record<string, unknown>;
+    userData?: Record<string, unknown>;
     message?: string;
   };
 }
@@ -20,7 +20,10 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
 }) => {
   // Generate credentials based on backend response or fallback to mock data
   const credentialData = {
-    username: credentials?.userData?.email || "john.doe@example.com",
+    username:
+      (typeof credentials?.userData?.email === "string"
+        ? credentials.userData.email
+        : null) || "john.doe@example.com",
     password: "ZKP_" + Math.random().toString(36).substr(2, 8).toUpperCase(),
     walletId:
       credentials?.requestId || "0x" + Math.random().toString(16).substr(2, 40),
@@ -248,7 +251,9 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
           </div>
 
           <div className="bg-[#faf8f0] rounded-lg p-4 mb-4 border border-[#e6d7b8]">
-            <h3 className="font-semibold text-[#8b6b2a] mb-2">What's Next?</h3>
+            <h3 className="font-semibold text-[#8b6b2a] mb-2">
+              What&apos;s Next?
+            </h3>
             <ul className="text-sm text-[#8b6b2a] space-y-1">
               <li>• Save your credentials in a secure location</li>
               <li>• Use your Request ID to track your credential status</li>

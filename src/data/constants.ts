@@ -26,7 +26,7 @@ export interface IssuanceResponse {
 }
 
 export interface CredentialResponse {
-  vc: any; // The full Verifiable Credential JSON
+  vc: Record<string, unknown>; // The full Verifiable Credential JSON
 }
 
 // Error response type

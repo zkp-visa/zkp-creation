@@ -7,7 +7,6 @@ import {
   VERIFICATION_MESSAGES,
   VERIFICATION_SETTINGS,
   DOCUMENT_STATUS,
-  SAMPLE_DOCUMENT_NAMES,
   FILE_SIZE_RANGE,
 } from "../data/screens/UploadDocuments";
 

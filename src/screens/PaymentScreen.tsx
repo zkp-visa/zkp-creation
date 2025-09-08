@@ -18,7 +18,7 @@ import {
 } from "../data/screens/Payment";
 
 interface PaymentScreenProps {
-  onNext: (credentials: any) => void;
+  onNext: (credentials: Record<string, unknown>) => void;
   onBack: () => void;
   userData: UserData;
 }

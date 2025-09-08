@@ -26,7 +26,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStart }) => {
           <div className="mb-6">
             <div className="bg-[#faf8f0] rounded-lg p-4 mb-4 border border-[#e6d7b8]">
               <h3 className="font-semibold text-[#8b6b2a] mb-2">
-                What you'll get:
+                What you&apos;ll get:
               </h3>
               <ul className="text-sm text-[#8b6b2a] space-y-1">
                 <li>• Secure digital credentials</li>

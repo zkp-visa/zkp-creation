@@ -174,7 +174,7 @@ class APIService {
           try {
             const errorData: APIErrorResponse = JSON.parse(responseText);
             errorMessage = errorData.detail || errorMessage;
-          } catch (parseError) {
+          } catch {
             // If it's not JSON, use the text as error message
             errorMessage = responseText || errorMessage;
           }
