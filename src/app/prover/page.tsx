@@ -6,48 +6,40 @@ import FillInfoScreen from "../../screens/FillInfoScreen";
 import UploadDocumentsScreen from "../../screens/UploadDocumentsScreen";
 import PaymentScreen from "../../screens/PaymentScreen";
 import CompleteScreen from "../../screens/CompleteScreen";
-import { UserData } from "../../types";
+import { UserData, ZKPCredential } from "../../types";
 
 type Screen = "home" | "fillInfo" | "uploadDocuments" | "payment" | "complete";
 
 export default function ProverPage() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
   const [userData, setUserData] = useState<UserData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    dateOfBirth: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    occupation: "",
-    company: "",
+    passportNumber: "",
+    nickname: "",
   });
+  const [documentVerified, setDocumentVerified] = useState(false);
+  const [credential, setCredential] = useState<ZKPCredential | null>(null);
 
   const handleStart = () => setCurrentScreen("fillInfo");
   const handleFillInfoNext = (data: UserData) => {
     setUserData(data);
     setCurrentScreen("uploadDocuments");
   };
-  const handleUploadNext = () => setCurrentScreen("payment");
-  const handlePaymentNext = () => setCurrentScreen("complete");
+  const handleUploadNext = () => {
+    setDocumentVerified(true);
+    setCurrentScreen("payment");
+  };
+  const handlePaymentNext = (cred: ZKPCredential) => {
+    setCredential(cred);
+    setCurrentScreen("complete");
+  };
   const handleRestart = () => {
     setCurrentScreen("home");
     setUserData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      occupation: "",
-      company: "",
+      passportNumber: "",
+      nickname: "",
     });
+    setDocumentVerified(false);
+    setCredential(null);
   };
   const handleBack = () => {
     switch (currentScreen) {
@@ -77,12 +69,13 @@ export default function ProverPage() {
       {currentScreen === "payment" && (
         <PaymentScreen
           userData={userData}
+          documentVerified={documentVerified}
           onNext={handlePaymentNext}
           onBack={handleBack}
         />
       )}
-      {currentScreen === "complete" && (
-        <CompleteScreen onRestart={handleRestart} />
+      {currentScreen === "complete" && credential && (
+        <CompleteScreen credential={credential} onRestart={handleRestart} />
       )}
     </main>
   );

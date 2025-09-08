@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import ProgressBar from "../components/ProgressBar";
-import { PaymentData, UserData } from "../types";
-import { apiService } from "../services/api";
-import { IssuanceRequest } from "../data/constants";
+import { PaymentData, UserData, ZKPCredential } from "../types";
+import { blockchainService } from "../services/blockchain";
+import QRCode from "qrcode";
 import {
   PAYMENT_FIELDS,
   SAMPLE_PAYMENT_DATA_VARIATIONS,
@@ -18,15 +18,17 @@ import {
 } from "../data/screens/Payment";
 
 interface PaymentScreenProps {
-  onNext: (credentials: Record<string, unknown>) => void;
+  onNext: (credential: ZKPCredential) => void;
   onBack: () => void;
   userData: UserData;
+  documentVerified: boolean;
 }
 
 const PaymentScreen: React.FC<PaymentScreenProps> = ({
   onNext,
   onBack,
   userData,
+  documentVerified,
 }) => {
   const [paymentData, setPaymentData] = useState<PaymentData>({
     cardNumber: "",
@@ -69,9 +71,30 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
     setProcessingStep("Processing payment...");
 
     try {
-      // Test backend endpoints first
-      console.log("Testing backend endpoints...");
-      await apiService.testBackendEndpoints();
+      // Check if documents are verified
+      if (!documentVerified) {
+        throw new Error("Documents must be verified before payment");
+      }
+
+      // Check if payment form is filled
+      const requiredFields = [
+        paymentData.cardNumber,
+        paymentData.cardholderName,
+        paymentData.expiryDate,
+        paymentData.cvv,
+        paymentData.billingAddress,
+        paymentData.city,
+        paymentData.state,
+        paymentData.zipCode,
+      ];
+
+      const isFormFilled = requiredFields.every((field) => field.trim() !== "");
+
+      if (!isFormFilled) {
+        alert("Please fill in all payment information before proceeding.");
+        setIsProcessing(false);
+        return;
+      }
 
       // Simulate payment processing first
       await new Promise((resolve) =>
@@ -80,56 +103,61 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       setPaymentStatus(PAYMENT_STATUS.SUCCESS);
       setProcessingStep("Payment successful! Creating ZKP credentials...");
 
-      // Prepare issuance request data
-      const issuanceData: IssuanceRequest = {
-        name: `${userData.firstName} ${userData.lastName}`,
-        passportNumber: userData.phone, // This should be the actual passport number
-        nationality: userData.state, // This should be the actual nationality
-        dob: userData.dateOfBirth, // This should be the actual date of birth
-      };
-
-      console.log("Creating issuance request...", issuanceData);
-      console.log(
-        "Request body format:",
-        JSON.stringify(issuanceData, null, 2)
-      );
-      setProcessingStep("Submitting data to backend...");
-
-      // Step A: Create issuance request and get QR code
-      const issuanceResponse = await apiService.createIssuanceRequest(
-        issuanceData
-      );
-      setRequestId(issuanceResponse.requestId);
-      setProcessingStep(
-        `Credential created! ID: ${issuanceResponse.requestId}. Getting full credential...`
-      );
-
-      console.log("Issuance request created:", issuanceResponse);
-
-      // Step B: Get full credential (optional)
-      let credential = null;
-      try {
-        setProcessingStep("Retrieving credential details...");
-        credential = await apiService.getCredential(issuanceResponse.requestId);
-        console.log("Full credential retrieved:", credential);
-        setProcessingStep("Credential retrieved successfully!");
-      } catch (credError) {
-        console.warn("Could not retrieve full credential:", credError);
-        setProcessingStep(
-          "Credential created but could not retrieve full details."
-        );
+      // Initialize blockchain service
+      setProcessingStep("Connecting to blockchain...");
+      const isInitialized = await blockchainService.initialize();
+      if (!isInitialized) {
+        throw new Error("Failed to connect to blockchain");
       }
 
-      // Pass the results to the next screen
-      const results = {
-        requestId: issuanceResponse.requestId,
-        qrPayload: issuanceResponse.qrPayload,
-        credential: credential?.vc,
-        userData: userData,
-        status: "completed", // Since we get QR code immediately, it's completed
+      // Generate token hash for the credential
+      setProcessingStep("Generating credential token...");
+      const tokenHash = blockchainService.generateTokenHash();
+
+      // Issue ZKP Visa credential on smart contract
+      setProcessingStep("Issuing ZKP Visa credential on blockchain...");
+      const txHash = await blockchainService.issueZKPVisa(
+        userData.passportNumber,
+        tokenHash,
+        documentVerified,
+        true // payment confirmed
+      );
+
+      setProcessingStep("Credential issued! Generating QR code...");
+
+      // Create credential data for QR code
+      const credentialData = {
+        tokenHash: tokenHash,
+        passportNumber: userData.passportNumber,
+        issuedAt: Date.now(),
+        txHash: txHash,
+        nickname: userData.nickname,
       };
 
-      onNext(results);
+      // Generate QR code
+      const qrCodeDataURL = await QRCode.toDataURL(
+        JSON.stringify(credentialData),
+        {
+          width: 300,
+          margin: 2,
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
+        }
+      );
+
+      setProcessingStep("ZKP Visa credential created successfully!");
+
+      // Create the credential object
+      const credential: ZKPCredential = {
+        tokenHash: tokenHash,
+        passportNumber: userData.passportNumber,
+        issuedAt: Date.now(),
+        qrCode: qrCodeDataURL,
+      };
+
+      onNext(credential);
     } catch (error) {
       console.error("Payment/Issuance error:", error);
       const errorMessage =
@@ -347,11 +375,13 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
           </Button>
           <Button
             onClick={handlePay}
-            disabled={isProcessing}
+            disabled={isProcessing || !documentVerified}
             className="flex-1"
           >
             {isProcessing
               ? PAYMENT_MESSAGES.PROCESSING
+              : !documentVerified
+              ? "Documents Not Verified"
               : PAYMENT_MESSAGES.PAY_BUTTON}
           </Button>
         </div>

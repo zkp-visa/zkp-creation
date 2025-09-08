@@ -1,15 +1,6 @@
 export interface UserData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  dateOfBirth: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  occupation: string;
-  company: string;
+  passportNumber: string;
+  nickname: string;
 }
 
 export interface DocumentFile {
@@ -44,4 +35,11 @@ export interface Verifier {
   nickname: string; // Name from smart contract
   authorized: boolean; // Authorization status from smart contract
   addedAt: number; // Timestamp from smart contract (in seconds)
+}
+
+export interface ZKPCredential {
+  tokenHash: string;
+  passportNumber: string;
+  issuedAt: number;
+  qrCode: string; // Base64 encoded QR code
 }

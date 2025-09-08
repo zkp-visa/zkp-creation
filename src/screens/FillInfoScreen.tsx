@@ -18,17 +18,8 @@ interface FillInfoScreenProps {
 
 const FillInfoScreen: React.FC<FillInfoScreenProps> = ({ onNext, onBack }) => {
   const [userData, setUserData] = useState<UserData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    dateOfBirth: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    occupation: "",
-    company: "",
+    passportNumber: "",
+    nickname: "",
   });
 
   const handleFieldChange = (field: keyof UserData, value: string) => {
@@ -70,23 +61,7 @@ const FillInfoScreen: React.FC<FillInfoScreenProps> = ({ onNext, onBack }) => {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <Input
-              label={FIELD_LABELS.FIRST_NAME}
-              value={userData[FILL_INFO_FIELDS.FIRST_NAME]}
-              onChange={(value) =>
-                handleFieldChange(FILL_INFO_FIELDS.FIRST_NAME, value)
-              }
-              required
-            />
-            <Input
-              label={FIELD_LABELS.LAST_NAME}
-              value={userData[FILL_INFO_FIELDS.LAST_NAME]}
-              onChange={(value) =>
-                handleFieldChange(FILL_INFO_FIELDS.LAST_NAME, value)
-              }
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <Input
               label={FIELD_LABELS.PASSPORT_NUMBER}
               value={userData[FILL_INFO_FIELDS.PASSPORT_NUMBER]}
@@ -97,22 +72,12 @@ const FillInfoScreen: React.FC<FillInfoScreenProps> = ({ onNext, onBack }) => {
               required
             />
             <Input
-              label={FIELD_LABELS.NATIONALITY}
-              value={userData[FILL_INFO_FIELDS.NATIONALITY]}
+              label={FIELD_LABELS.NICKNAME}
+              value={userData[FILL_INFO_FIELDS.NICKNAME]}
               onChange={(value) =>
-                handleFieldChange(FILL_INFO_FIELDS.NATIONALITY, value)
+                handleFieldChange(FILL_INFO_FIELDS.NICKNAME, value)
               }
-              placeholder={FIELD_PLACEHOLDERS.NATIONALITY}
-              required
-            />
-            <Input
-              label={FIELD_LABELS.DATE_OF_BIRTH}
-              type="text"
-              value={userData[FILL_INFO_FIELDS.DATE_OF_BIRTH]}
-              onChange={(value) =>
-                handleFieldChange(FILL_INFO_FIELDS.DATE_OF_BIRTH, value)
-              }
-              placeholder={FIELD_PLACEHOLDERS.DATE_OF_BIRTH}
+              placeholder={FIELD_PLACEHOLDERS.NICKNAME}
               required
             />
           </div>

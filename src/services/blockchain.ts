@@ -204,6 +204,62 @@ export class BlockchainService {
       throw error;
     }
   }
+
+  // Issue ZKP Visa credential
+  async issueZKPVisa(
+    passportNumber: string,
+    tokenHash: string,
+    documentVerified: boolean = true,
+    paymentConfirmed: boolean = true
+  ): Promise<string> {
+    if (!this.contract) {
+      throw new Error("Blockchain service not initialized");
+    }
+
+    try {
+      const tx = await this.contract.issueZKPVisa(
+        passportNumber,
+        tokenHash,
+        documentVerified,
+        paymentConfirmed
+      );
+      await tx.wait(); // Wait for transaction confirmation
+      return tx.hash;
+    } catch (error: unknown) {
+      console.error("Error issuing ZKP Visa:", error);
+
+      // Handle specific contract errors
+      if (error && typeof error === "object" && "reason" in error) {
+        const errorWithReason = error as { reason: string };
+        switch (errorWithReason.reason) {
+          case "DocumentNotVerified":
+            throw new Error(
+              "Documents must be verified before issuing credential"
+            );
+          case "PaymentNotConfirmed":
+            throw new Error(
+              "Payment must be confirmed before issuing credential"
+            );
+          case "TokenHashAlreadyExists":
+            throw new Error("This credential has already been issued");
+          case "NotOwner":
+            throw new Error("Only the contract owner can issue credentials");
+          default:
+            throw new Error(errorWithReason.reason);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  // Generate a random token hash for the credential
+  generateTokenHash(): string {
+    // Generate a random 32-byte hash
+    const randomBytes = new Uint8Array(32);
+    crypto.getRandomValues(randomBytes);
+    return ethers.keccak256(randomBytes);
+  }
 }
 
 // Singleton instance
