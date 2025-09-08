@@ -105,7 +105,8 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
                 data
               </li>
               <li>
-                • Keep your credential secure and don't share it with others
+                • Keep your credential secure and don&apos;t share it with
+                others
               </li>
             </ul>
           </div>
