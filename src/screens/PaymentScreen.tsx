@@ -125,13 +125,9 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
 
       setProcessingStep("Credential issued! Generating QR code...");
 
-      // Create credential data for QR code
+      // Create credential data for QR code (prototyping - only token hash)
       const credentialData = {
         tokenHash: tokenHash,
-        passportNumber: userData.passportNumber,
-        issuedAt: Date.now(),
-        txHash: txHash,
-        nickname: userData.nickname,
       };
 
       // Generate QR code
