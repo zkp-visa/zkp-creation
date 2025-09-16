@@ -70,9 +70,9 @@ export const ORDER_SUMMARY = {
   CREDENTIAL_CREATION: "ZKP Credential Creation",
   PROCESSING_FEE: "Processing Fee",
   TOTAL: "Total",
-  CREDENTIAL_PRICE: "$99.00",
-  FEE_AMOUNT: "$5.00",
-  TOTAL_AMOUNT: "$104.00",
+  CREDENTIAL_PRICE: "1,900 AED",
+  FEE_AMOUNT: "100 AED",
+  TOTAL_AMOUNT: "2,000 AED",
 } as const;
 
 export const PAYMENT_STATUS = {
@@ -83,7 +83,7 @@ export const PAYMENT_STATUS = {
 
 export const PAYMENT_MESSAGES = {
   PROCESSING: "Processing Payment...",
-  PAY_BUTTON: "Pay $104.00",
+  PAY_BUTTON: "Pay 2,000 AED",
   SUCCESS_TITLE: "✓ Payment Successful",
   SUCCESS_MESSAGE:
     "Payment processed successfully. Creating your ZKP credentials...",
