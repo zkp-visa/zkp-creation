@@ -11,36 +11,61 @@ const generateMockWasmFile = (
   passportNumber: string,
   nickname: string,
   expiresAt: number
-): string => {
-  // In a real implementation, this would be the compiled WebAssembly file from your ZKP circuit
-  // For prototyping, we create a mock file with the credential data
-  const wasmData = {
-    passportNumber,
-    nickname,
-    expiresAt,
-    circuitType: "zkp-visa-verification",
-    version: "1.0.0",
-    timestamp: Date.now(),
-  };
-  return `WASM_MOCK_DATA:${JSON.stringify(wasmData)}`;
+): Uint8Array => {
+  // Create a mock WebAssembly file that starts with proper magic bytes
+  const wasmMagicBytes = new Uint8Array([0x00, 0x61, 0x73, 0x6d]); // \0asm
+  const versionBytes = new Uint8Array([0x01, 0x00, 0x00, 0x00]); // Version 1
+
+  // Create some mock binary data (in real implementation, this would be compiled WASM)
+  const mockData = new TextEncoder().encode(
+    JSON.stringify({
+      passportNumber,
+      nickname,
+      expiresAt,
+      circuitType: "zkp-visa-verification",
+      version: "1.0.0",
+      timestamp: Date.now(),
+    })
+  );
+
+  // Combine magic bytes + version + mock data
+  const totalLength =
+    wasmMagicBytes.length + versionBytes.length + mockData.length;
+  const wasmFile = new Uint8Array(new ArrayBuffer(totalLength));
+  wasmFile.set(wasmMagicBytes, 0);
+  wasmFile.set(versionBytes, wasmMagicBytes.length);
+  wasmFile.set(mockData, wasmMagicBytes.length + versionBytes.length);
+
+  return wasmFile;
 };
 
 const generateMockZkeyFile = (
   passportNumber: string,
   commitment: string,
   expiresAt: number
-): string => {
-  // In a real implementation, this would be your proving key file
-  // For prototyping, we create a mock file with the key data
-  const zkeyData = {
-    commitment, // Use commitment instead of tokenHash
-    passportNumber,
-    expiresAt,
-    keyType: "proving-key",
-    version: "1.0.0",
-    timestamp: Date.now(),
-  };
-  return `ZKEY_MOCK_DATA:${JSON.stringify(zkeyData)}`;
+): Uint8Array => {
+  // Create a mock zkey file with proper binary structure
+  const zkeyHeader = new Uint8Array([0x7a, 0x6b, 0x65, 0x79]); // "zkey" in ASCII
+
+  // Create mock key data
+  const keyData = new TextEncoder().encode(
+    JSON.stringify({
+      commitment, // Use commitment instead of tokenHash
+      passportNumber,
+      expiresAt,
+      keyType: "proving-key",
+      version: "1.0.0",
+      timestamp: Date.now(),
+    })
+  );
+
+  // Combine header + key data
+  const totalLength = zkeyHeader.length + keyData.length;
+  const zkeyFile = new Uint8Array(new ArrayBuffer(totalLength));
+  zkeyFile.set(zkeyHeader, 0);
+  zkeyFile.set(keyData, zkeyHeader.length);
+
+  return zkeyFile;
 };
 
 // Generate all credential files for download
@@ -76,7 +101,8 @@ const generateCredentialFiles = async (
     userData.nickname,
     expiresAt
   );
-  const wasmBlob = new Blob([wasmContent], { type: "application/wasm" });
+  const wasmBase64 = btoa(String.fromCharCode(...wasmContent));
+  const wasmBlob = new Blob([wasmBase64], { type: "application/wasm" });
 
   // 4. Generate .zkey file (mock)
   const zkeyContent = generateMockZkeyFile(
@@ -84,7 +110,8 @@ const generateCredentialFiles = async (
     commitment,
     expiresAt
   );
-  const zkeyBlob = new Blob([zkeyContent], {
+  const zkeyBase64 = btoa(String.fromCharCode(...zkeyContent));
+  const zkeyBlob = new Blob([zkeyBase64], {
     type: "application/octet-stream",
   });
 
@@ -93,6 +120,8 @@ const generateCredentialFiles = async (
     commitment: commitmentBlob,
     wasm: wasmBlob,
     zkey: zkeyBlob,
+    wasmBase64,
+    zkeyBase64,
     metadataContent,
   };
 };
@@ -225,7 +254,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         userData.nickname,
         expiresAt
       );
-      const wasmBase64 = btoa(wasmContent);
+      const wasmBase64 = btoa(String.fromCharCode(...wasmContent));
 
       // Generate mock .zkey file content (in a real app, this would be your proving key)
       const zkeyContent = generateMockZkeyFile(
@@ -233,7 +262,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         commitment, // Use commitment instead of tokenHash
         expiresAt
       );
-      const zkeyBase64 = btoa(zkeyContent);
+      const zkeyBase64 = btoa(String.fromCharCode(...zkeyContent));
 
       setProcessingStep("Generating credential files...");
 
@@ -268,8 +297,8 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         passportNumber: userData.passportNumber,
         issuedAt: issuedAt,
         expiresAt: expiresAt,
-        wasmFile: wasmBase64,
-        zkeyFile: zkeyBase64,
+        wasmFile: credentialFiles.wasmBase64,
+        zkeyFile: credentialFiles.zkeyBase64,
         qrCode: "", // No longer needed
         credentialFiles: credentialFiles, // New: credential files
         metadata: credentialMetadata, // New: metadata content
