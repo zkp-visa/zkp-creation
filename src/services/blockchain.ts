@@ -276,6 +276,22 @@ export class BlockchainService {
     crypto.getRandomValues(randomBytes);
     return ethers.keccak256(randomBytes);
   }
+
+  // Get current merkle root from smart contract
+  async getCurrentMerkleRoot(): Promise<string> {
+    if (!this.contract) {
+      throw new Error("Blockchain service not initialized");
+    }
+
+    try {
+      const merkleRoot = await this.contract.getCurrentMerkleRoot();
+      return merkleRoot.toString();
+    } catch (error) {
+      console.error("Error getting current merkle root:", error);
+      // Return a default merkle root for testing if contract call fails
+      return "0x0000000000000000000000000000000000000000000000000000000000000000";
+    }
+  }
 }
 
 // Singleton instance

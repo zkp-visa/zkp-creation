@@ -45,5 +45,19 @@ export interface ZKPCredential {
   expiresAt: number; // Expiration timestamp (5 minutes from issuedAt)
   wasmFile: string; // Base64 encoded .wasm file
   zkeyFile: string; // Base64 encoded .zkey file
-  qrCode: string; // Base64 encoded QR code
+  qrCode: string; // Base64 encoded QR code (deprecated)
+  credentialFiles?: {
+    metadata: Blob;
+    commitment: Blob;
+    wasm: Blob;
+    zkey: Blob;
+    metadataContent: string;
+  };
+  metadata?: {
+    commitment: string;
+    salt: string;
+    issuedAt: number;
+    txHash: string;
+    merkleRoot: string;
+  };
 }

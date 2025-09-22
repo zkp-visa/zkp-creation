@@ -42,6 +42,60 @@ const generateMockZkeyFile = (
   };
   return `ZKEY_MOCK_DATA:${JSON.stringify(zkeyData)}`;
 };
+
+// Generate all credential files for download
+const generateCredentialFiles = async (
+  userData: UserData,
+  commitment: string,
+  salt: string,
+  issuedAt: number,
+  expiresAt: number,
+  txHash: string,
+  merkleRoot: string
+) => {
+  // 1. Generate credential_metadata.json
+  const credentialMetadata = {
+    commitment: commitment,
+    salt: salt,
+    issuedAt: issuedAt,
+    txHash: txHash,
+    merkleRoot: merkleRoot,
+  };
+  const metadataContent = JSON.stringify(credentialMetadata, null, 2);
+  const metadataBlob = new Blob([metadataContent], {
+    type: "application/json",
+  });
+
+  // 2. Generate commitment.txt
+  const commitmentContent = commitment;
+  const commitmentBlob = new Blob([commitmentContent], { type: "text/plain" });
+
+  // 3. Generate .wasm file (mock)
+  const wasmContent = generateMockWasmFile(
+    userData.passportNumber,
+    userData.nickname,
+    expiresAt
+  );
+  const wasmBlob = new Blob([wasmContent], { type: "application/wasm" });
+
+  // 4. Generate .zkey file (mock)
+  const zkeyContent = generateMockZkeyFile(
+    userData.passportNumber,
+    commitment,
+    expiresAt
+  );
+  const zkeyBlob = new Blob([zkeyContent], {
+    type: "application/octet-stream",
+  });
+
+  return {
+    metadata: metadataBlob,
+    commitment: commitmentBlob,
+    wasm: wasmBlob,
+    zkey: zkeyBlob,
+    metadataContent,
+  };
+};
 import {
   PAYMENT_FIELDS,
   SAMPLE_PAYMENT_DATA_VARIATIONS,
@@ -181,29 +235,32 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
       );
       const zkeyBase64 = btoa(zkeyContent);
 
-      setProcessingStep("Generating QR code...");
+      setProcessingStep("Generating credential files...");
 
-      // Create credential data for QR code (prototyping - only commitment hash)
-      const credentialData = {
+      // Get current merkle root from smart contract
+      const currentMerkleRoot = await blockchainService.getCurrentMerkleRoot();
+
+      // Generate credential metadata
+      const credentialMetadata = {
         commitment: commitment,
         salt: salt,
+        issuedAt: issuedAt,
         txHash: txHash,
+        merkleRoot: currentMerkleRoot,
       };
 
-      // Generate QR code
-      const qrCodeDataURL = await QRCode.toDataURL(
-        JSON.stringify(credentialData),
-        {
-          width: 300,
-          margin: 2,
-          color: {
-            dark: "#000000",
-            light: "#FFFFFF",
-          },
-        }
+      // Generate credential files
+      const credentialFiles = await generateCredentialFiles(
+        userData,
+        commitment,
+        salt,
+        issuedAt,
+        expiresAt,
+        txHash,
+        currentMerkleRoot
       );
 
-      setProcessingStep("ZKP Visa credential created successfully!");
+      setProcessingStep("ZKP Visa credential files created successfully!");
 
       // Create the credential object
       const credential: ZKPCredential = {
@@ -213,7 +270,9 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({
         expiresAt: expiresAt,
         wasmFile: wasmBase64,
         zkeyFile: zkeyBase64,
-        qrCode: qrCodeDataURL,
+        qrCode: "", // No longer needed
+        credentialFiles: credentialFiles, // New: credential files
+        metadata: credentialMetadata, // New: metadata content
       };
 
       onNext(credential);

@@ -2,6 +2,10 @@ import React, { useEffect } from "react";
 import Button from "../components/Button";
 import ProgressBar from "../components/ProgressBar";
 import { ZKPCredential } from "../types";
+import {
+  downloadCredentialPackage,
+  downloadIndividualFiles,
+} from "../utils/fileDownload";
 
 interface CompleteScreenProps {
   onRestart: () => void;
@@ -15,7 +19,7 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
   // Show popup alert when component mounts
   useEffect(() => {
     alert(
-      "ZKP Visa Credential Issued!\n\nYour ZKP Visa credential files (.wasm and .zkey) have been generated and are ready for download. These files will expire in 5 minutes."
+      "ZKP Visa Credential Issued!\n\nYour ZKP Visa credential files have been generated and are ready for download. Download all 4 files: metadata, commitment, .wasm, and .zkey."
     );
   }, []);
 
@@ -66,6 +70,29 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
     return `${minutes}m ${seconds}s remaining`;
   };
 
+  const handleDownloadAllFiles = () => {
+    if (credential.credentialFiles) {
+      downloadCredentialPackage(
+        credential.credentialFiles.metadata,
+        credential.credentialFiles.commitment,
+        credential.credentialFiles.wasm,
+        credential.credentialFiles.zkey,
+        credential.passportNumber
+      );
+    }
+  };
+
+  const handleDownloadIndividualFiles = () => {
+    if (credential.credentialFiles) {
+      downloadIndividualFiles(
+        credential.credentialFiles.metadata,
+        credential.credentialFiles.commitment,
+        credential.credentialFiles.wasm,
+        credential.credentialFiles.zkey
+      );
+    }
+  };
+
   return (
     <div className="h-screen bg-gradient-to-br from-[#faf8f0] to-[#f5f0e0] p-4">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 h-full flex flex-col">
@@ -78,75 +105,74 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
               Your ZKP Visa Credential Files
             </h2>
 
+            {/* Download Options */}
             <div className="text-center mb-6">
-              <div className="inline-block p-4 bg-white rounded-lg shadow-md">
-                <img
-                  src={credential.qrCode}
-                  alt="ZKP Visa Credential QR Code"
-                  className="w-48 h-48 mx-auto"
-                />
+              <div className="space-y-3">
+                <Button
+                  onClick={handleDownloadAllFiles}
+                  className="bg-green-600 hover:bg-green-700 w-full"
+                >
+                  📦 Download All Files (Package)
+                </Button>
+                <Button
+                  onClick={handleDownloadIndividualFiles}
+                  variant="secondary"
+                  className="w-full"
+                >
+                  📁 Download Individual Files
+                </Button>
               </div>
-              <p className="text-sm text-gray-600 mt-2">
-                QR Code for quick verification
+              <p className="text-sm text-gray-600 mt-3">
+                Download all 4 required files: metadata, commitment, .wasm, and
+                .zkey
               </p>
             </div>
 
-            {/* File Downloads */}
-            <div className="space-y-4 mb-6">
+            {/* File Information */}
+            <div className="space-y-3 mb-6">
               <div className="bg-white rounded-lg p-4 border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-gray-800">
-                      ZKP Circuit File (.wasm)
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      WebAssembly circuit for verification
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() =>
-                      handleDownloadFile(
-                        credential.wasmFile,
-                        `zkp-visa-${credential.passportNumber}.wasm`
-                      )
-                    }
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Download .wasm
-                  </Button>
-                </div>
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  📄 credential_metadata.json
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Contains: commitment, salt, issuedAt, txHash, merkleRoot
+                </p>
               </div>
 
               <div className="bg-white rounded-lg p-4 border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-gray-800">
-                      Proving Key File (.zkey)
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Proving key for generating proofs
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() =>
-                      handleDownloadFile(
-                        credential.zkeyFile,
-                        `zkp-visa-${credential.passportNumber}.zkey`
-                      )
-                    }
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Download .zkey
-                  </Button>
-                </div>
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  📄 commitment.txt
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Contains: commitment hash for verification
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg p-4 border">
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  🔧 passport_member.wasm
+                </h3>
+                <p className="text-sm text-gray-600">
+                  WebAssembly circuit file for ZK proof generation
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg p-4 border">
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  🔑 passport_member.zkey
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Proving key file for ZK proof generation
+                </p>
               </div>
             </div>
 
+            {/* Credential Details */}
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-white rounded border">
                 <div>
                   <label className="text-sm font-medium text-gray-700">
-                    Token Hash
+                    Commitment Hash
                   </label>
                   <p className="text-gray-900 font-mono text-xs break-all">
                     {credential.tokenHash}
@@ -154,7 +180,10 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
                 </div>
                 <Button
                   onClick={() =>
-                    handleCopyToClipboard(credential.tokenHash, "Token Hash")
+                    handleCopyToClipboard(
+                      credential.tokenHash,
+                      "Commitment Hash"
+                    )
                   }
                   variant="secondary"
                   size="sm"
@@ -162,6 +191,32 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
                   Copy
                 </Button>
               </div>
+
+              {credential.metadata && (
+                <div className="p-3 bg-white rounded border">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      Salt
+                    </label>
+                    <p className="text-gray-900 font-mono text-xs break-all">
+                      {credential.metadata.salt}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {credential.metadata && (
+                <div className="p-3 bg-white rounded border">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      Merkle Root
+                    </label>
+                    <p className="text-gray-900 font-mono text-xs break-all">
+                      {credential.metadata.merkleRoot}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="p-3 bg-white rounded border">
                 <div>
@@ -195,21 +250,22 @@ const CompleteScreen: React.FC<CompleteScreenProps> = ({
               What&apos;s Next?
             </h3>
             <ul className="text-sm text-[#8b6b2a] space-y-1">
-              <li>
-                • Download your .wasm and .zkey files to your phone securely
-              </li>
+              <li>• Download all 4 credential files to your device securely</li>
               <li>
                 • Your ZKP Visa credential is now stored on the blockchain
               </li>
-              <li>• Files will expire in 5 minutes - download them quickly</li>
-              <li>• Use these files to generate proofs for verification</li>
-              <li>• Present this credential at airports for verification</li>
+              <li>• Import these files into your ZKP wallet app</li>
+              <li>• Use passport + nickname + files to generate ZK proofs</li>
+              <li>• Present proofs at airports for verification</li>
               <li>
                 • Your credential can be verified without revealing personal
                 data
               </li>
               <li>
                 • Keep your files secure and don&apos;t share them with others
+              </li>
+              <li>
+                • The salt in metadata.json is essential for proof generation
               </li>
             </ul>
           </div>
