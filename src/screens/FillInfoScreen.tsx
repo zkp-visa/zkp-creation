@@ -20,12 +20,13 @@ const FillInfoScreen: React.FC<FillInfoScreenProps> = ({ onNext, onBack }) => {
   const [userData, setUserData] = useState<UserData>({
     passportNumber: "",
     nickname: "",
+    duration: 5, // Default 5 minutes
   });
 
   const handleFieldChange = (field: keyof UserData, value: string) => {
     setUserData((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: field === "duration" ? parseInt(value) || 5 : value,
     }));
   };
 
@@ -56,12 +57,12 @@ const FillInfoScreen: React.FC<FillInfoScreenProps> = ({ onNext, onBack }) => {
             Personal Information
           </h1>
           <p className="text-gray-600">
-            Please provide your details to create your ZKP credentials
+            Please provide your details to create your ZKP certification
           </p>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <Input
               label={FIELD_LABELS.PASSPORT_NUMBER}
               value={userData[FILL_INFO_FIELDS.PASSPORT_NUMBER]}
@@ -78,6 +79,16 @@ const FillInfoScreen: React.FC<FillInfoScreenProps> = ({ onNext, onBack }) => {
                 handleFieldChange(FILL_INFO_FIELDS.NICKNAME, value)
               }
               placeholder={FIELD_PLACEHOLDERS.NICKNAME}
+              required
+            />
+            <Input
+              label={FIELD_LABELS.DURATION}
+              type="number"
+              value={userData[FILL_INFO_FIELDS.DURATION].toString()}
+              onChange={(value) =>
+                handleFieldChange(FILL_INFO_FIELDS.DURATION, value)
+              }
+              placeholder={FIELD_PLACEHOLDERS.DURATION}
               required
             />
           </div>

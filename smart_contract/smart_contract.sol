@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/// @title ZKPVisa - Admin & Verifier Management System
-/// @notice A smart contract for managing verifiers with two main flows:
-///         - Admin (Contract Deployer): Manages verifier registration and authorization
-///         - Verifier (Airport Authority): Can check their authorization status
-/// @dev Simplified version focusing on verifier management only
+import "./Verifier.sol";
 
-contract ZKPVisa {
-    // -------- Errors (gas-efficient) --------
+/// @title ZKPVisaPermanent - Zero-Knowledge Proof Visa System
+/// @notice A smart contract for managing ZKP-based visa credentials with privacy-preserving verification
+/// @dev Uses Circom circuits for ZK proof generation and verification
+contract ZKPVisaPermanent {
+    // -------- Errors --------
     error NotOwner();
     error NotVerifier();
     error ZeroAddress();
@@ -16,20 +15,18 @@ contract ZKPVisa {
     error VerifierNotFound();
     error CredentialNotFound();
     error CredentialAlreadyUsed();
-    error TokenHashAlreadyExists();
+    error InvalidProof();
+    error MerkleRootNotFound();
     error DocumentNotVerified();
     error PaymentNotConfirmed();
 
     // -------- Access Control --------
-
-    /// @notice Admin (Contract Deployer) - Manages the verifier system
     address public owner;
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
         _;
     }
 
-    /// @notice Verifier modifier - only authorized verifiers can call
     modifier onlyVerifier() {
         if (!verifiers[msg.sender].authorized) revert NotVerifier();
         _;
@@ -39,25 +36,33 @@ contract ZKPVisa {
 
     /// @notice Verifier information structure
     struct VerifierInfo {
-        string nickname; // Human-readable name for the verifier
-        bool authorized; // Authorization status
-        uint256 addedAt; // Timestamp when added
+        string nickname;
+        bool authorized;
+        uint256 addedAt;
     }
 
-    /// @notice ZKP-Visa credential structure
+    /// @notice ZKP-Visa credential structure (privacy-preserving)
     struct ZKPVisaCredential {
-        string passportNumber; // User's passport number
+        uint256 commitment; // Hash commitment of user data (passport, etc.)
         uint256 issuedAt; // Timestamp when issued
         bool used; // Whether this credential has been verified/used
         bool exists; // Whether this credential exists
+        uint256 merkleRootIndex; // Which merkle root this credential belongs to
     }
 
     /// @notice Verification log entry
     struct VerificationLog {
-        bytes32 credentialHash; // Hash of the verified credential
+        uint256 commitment; // Commitment of the verified credential
         address verifier; // Address of the verifier who verified
         string verifierName; // Name of the verifier
         uint256 verifiedAt; // Timestamp of verification
+    }
+
+    /// @notice Merkle root entry for batch credential issuance
+    struct MerkleRoot {
+        uint256 root; // Merkle root hash
+        uint256 timestamp; // When this root was added
+        uint256 credentialCount; // Number of credentials in this batch
     }
 
     // -------- Storage --------
@@ -68,14 +73,20 @@ contract ZKPVisa {
     /// @notice Array to keep track of all verifier addresses for enumeration
     address[] public verifierList;
 
-    /// @notice Mapping from token hash to credential (token is never stored on-chain)
-    mapping(bytes32 => ZKPVisaCredential) public credentials;
+    /// @notice Mapping from commitment to credential (commitment = hash of user data)
+    mapping(uint256 => ZKPVisaCredential) public credentials;
 
     /// @notice Array to track all issued credentials for admin viewing
-    bytes32[] public issuedCredentials;
+    uint256[] public issuedCredentials;
 
     /// @notice Array of all verification logs
     VerificationLog[] public verificationLogs;
+
+    /// @notice Array of merkle roots for batch credential management
+    MerkleRoot[] public merkleRoots;
+
+    /// @notice Current merkle root index
+    uint256 public currentMerkleRootIndex;
 
     // -------- Events --------
     event VerifierAdded(address indexed verifier, string nickname);
@@ -85,15 +96,20 @@ contract ZKPVisa {
         address indexed newOwner
     );
     event ZKPVisaIssued(
-        bytes32 indexed tokenHash,
-        string passportNumber,
+        uint256 indexed commitment,
+        uint256 merkleRootIndex,
         uint256 issuedAt
     );
     event ZKPVisaVerified(
-        bytes32 indexed tokenHash,
+        uint256 indexed commitment,
         address indexed verifier,
         string verifierName,
         uint256 verifiedAt
+    );
+    event MerkleRootAdded(
+        uint256 indexed root,
+        uint256 indexed index,
+        uint256 timestamp
     );
 
     // -------- Constructor --------
@@ -146,11 +162,51 @@ contract ZKPVisa {
         emit VerifierRevoked(verifier, nickname);
     }
 
+    /// @notice Add a new merkle root for batch credential management
+    /// @param root The merkle root hash
+    /// @param credentialCount Number of credentials in this batch
+    function addMerkleRoot(
+        uint256 root,
+        uint256 credentialCount
+    ) external onlyOwner {
+        merkleRoots.push(
+            MerkleRoot({
+                root: root,
+                timestamp: block.timestamp,
+                credentialCount: credentialCount
+            })
+        );
+
+        currentMerkleRootIndex = merkleRoots.length - 1;
+        emit MerkleRootAdded(root, currentMerkleRootIndex, block.timestamp);
+    }
+
+    /// @notice Issue a ZKP-Visa credential to a user
+    /// @param commitment Hash commitment of user data (passport, etc.)
+    /// @param documentVerified Must be true to issue (document verification)
+    /// @param paymentConfirmed Must be true to issue (payment confirmation)
+    function issueZKPVisa(
+        uint256 commitment,
+        bool documentVerified,
+        bool paymentConfirmed
+    ) external onlyOwner {
+        if (!documentVerified) revert DocumentNotVerified();
+        if (!paymentConfirmed) revert PaymentNotConfirmed();
+        if (credentials[commitment].exists) revert CredentialNotFound();
+
+        credentials[commitment] = ZKPVisaCredential({
+            commitment: commitment,
+            issuedAt: block.timestamp,
+            used: false,
+            exists: true,
+            merkleRootIndex: currentMerkleRootIndex
+        });
+
+        issuedCredentials.push(commitment);
+        emit ZKPVisaIssued(commitment, currentMerkleRootIndex, block.timestamp);
+    }
+
     /// @notice Get all verifiers (for admin interface)
-    /// @return addresses Array of all verifier addresses
-    /// @return nicknames Array of corresponding nicknames
-    /// @return authorized Array of authorization status
-    /// @return addedAt Array of timestamps when added
     function getAllVerifiers()
         external
         view
@@ -179,34 +235,7 @@ contract ZKPVisa {
         }
     }
 
-    /// @notice Issue a ZKP-Visa credential to a user
-    /// @param passportNumber The user's passport number
-    /// @param tokenHash Hash of the one-time token (generated off-chain)
-    /// @param documentVerified Must be true to issue (document verification)
-    /// @param paymentConfirmed Must be true to issue (payment confirmation)
-    function issueZKPVisa(
-        string calldata passportNumber,
-        bytes32 tokenHash,
-        bool documentVerified,
-        bool paymentConfirmed
-    ) external onlyOwner {
-        if (!documentVerified) revert DocumentNotVerified();
-        if (!paymentConfirmed) revert PaymentNotConfirmed();
-        if (credentials[tokenHash].exists) revert TokenHashAlreadyExists();
-
-        credentials[tokenHash] = ZKPVisaCredential({
-            passportNumber: passportNumber,
-            issuedAt: block.timestamp,
-            used: false,
-            exists: true
-        });
-
-        issuedCredentials.push(tokenHash);
-        emit ZKPVisaIssued(tokenHash, passportNumber, block.timestamp);
-    }
-
     /// @notice Get all verification logs (for admin dashboard)
-    /// @return logs Array of all verification logs
     function getAllVerificationLogs()
         external
         view
@@ -217,45 +246,23 @@ contract ZKPVisa {
     }
 
     /// @notice Get all issued credentials (for admin dashboard)
-    /// @return credentialHashes Array of all issued credential hashes
     function getAllIssuedCredentials()
         external
         view
         onlyOwner
-        returns (bytes32[] memory credentialHashes)
+        returns (uint256[] memory commitments)
     {
         return issuedCredentials;
     }
 
-    /// @notice Get credential details by passport number
-    /// @param passportNumber The passport number to search for
-    /// @return credential The credential details
-    /// @return tokenHash The hash of the found credential
-    function getCredentialDetails(
-        string calldata passportNumber
-    )
+    /// @notice Get all merkle roots (for admin dashboard)
+    function getAllMerkleRoots()
         external
         view
         onlyOwner
-        returns (ZKPVisaCredential memory credential, bytes32 tokenHash)
+        returns (MerkleRoot[] memory roots)
     {
-        // Search through all issued credentials to find matching passport number
-        for (uint256 i = 0; i < issuedCredentials.length; i++) {
-            bytes32 currentHash = issuedCredentials[i];
-            ZKPVisaCredential storage currentCredential = credentials[
-                currentHash
-            ];
-
-            // Compare passport numbers (using keccak256 for string comparison)
-            if (
-                keccak256(bytes(currentCredential.passportNumber)) ==
-                keccak256(bytes(passportNumber))
-            ) {
-                return (currentCredential, currentHash);
-            }
-        }
-
-        revert CredentialNotFound();
+        return merkleRoots;
     }
 
     /// @notice Transfer ownership (admin role)
@@ -270,9 +277,6 @@ contract ZKPVisa {
     // ========================================================================
 
     /// @notice Check if the calling address is an authorized verifier
-    /// @return authorized True if the caller is an authorized verifier
-    /// @return nickname The nickname of the verifier (empty string if not authorized)
-    /// @return addedAt Timestamp when the verifier was added (0 if not authorized)
     function checkMyStatus()
         external
         view
@@ -282,29 +286,44 @@ contract ZKPVisa {
         return (info.authorized, info.nickname, info.addedAt);
     }
 
-    /// @notice Verify a ZKP-Visa credential from QR code scan
-    /// @param token The raw token from the QR code
+    /// @notice Verify a ZKP-Visa credential using zero-knowledge proof
+    /// @param a First part of the ZK proof
+    /// @param b Second part of the ZK proof
+    /// @param c Third part of the ZK proof
+    /// @param publicSignals The public signals from the proof
     /// @return success True if verification successful
-    /// @return passportNumber The passport number of the verified credential
     function verifyZKPVisa(
-        bytes calldata token
-    )
-        external
-        onlyVerifier
-        returns (bool success, string memory passportNumber)
-    {
-        bytes32 tokenHash = keccak256(token);
-        ZKPVisaCredential storage credential = credentials[tokenHash];
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory publicSignals
+    ) external onlyVerifier returns (bool success) {
+        // Verify the ZK proof using the imported Verifier contract
+        Verifier verifier = new Verifier();
+        if (!verifier.verifyProof(a, b, c, publicSignals)) {
+            revert InvalidProof();
+        }
 
+        // Extract commitment from public signals
+        uint256 commitment = publicSignals[0];
+        uint256 merkleRoot = publicSignals[1];
+
+        // Check if credential exists and is not used
+        ZKPVisaCredential storage credential = credentials[commitment];
         if (!credential.exists) revert CredentialNotFound();
         if (credential.used) revert CredentialAlreadyUsed();
+
+        // Verify merkle root matches
+        if (merkleRoots[credential.merkleRootIndex].root != merkleRoot) {
+            revert MerkleRootNotFound();
+        }
 
         // Mark as used (one-time verification)
         credential.used = true;
 
         // Add to verification log
         VerificationLog memory log = VerificationLog({
-            credentialHash: tokenHash,
+            commitment: commitment,
             verifier: msg.sender,
             verifierName: verifiers[msg.sender].nickname,
             verifiedAt: block.timestamp
@@ -312,13 +331,13 @@ contract ZKPVisa {
         verificationLogs.push(log);
 
         emit ZKPVisaVerified(
-            tokenHash,
+            commitment,
             msg.sender,
             verifiers[msg.sender].nickname,
             block.timestamp
         );
 
-        return (true, credential.passportNumber);
+        return true;
     }
 
     // ========================================================================
@@ -326,8 +345,13 @@ contract ZKPVisa {
     // ========================================================================
 
     /// @notice Get total number of authorized verifiers
-    /// @return count Number of currently authorized verifiers
     function getVerifierCount() external view returns (uint256 count) {
         return verifierList.length;
+    }
+
+    /// @notice Get current merkle root
+    function getCurrentMerkleRoot() external view returns (uint256 root) {
+        if (merkleRoots.length == 0) return 0;
+        return merkleRoots[currentMerkleRootIndex].root;
     }
 }

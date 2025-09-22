@@ -1,23 +1,5 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "verifier",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "nickname",
-        "type": "string"
-      }
-    ],
-    "name": "addVerifier",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -38,32 +20,14 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "passportNumber",
-        "type": "string"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "tokenHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bool",
-        "name": "documentVerified",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "paymentConfirmed",
-        "type": "bool"
-      }
-    ],
-    "name": "issueZKPVisa",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "inputs": [],
+    "name": "InvalidProof",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MerkleRootNotFound",
+    "type": "error"
   },
   {
     "inputs": [],
@@ -78,11 +42,6 @@
   {
     "inputs": [],
     "name": "PaymentNotConfirmed",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "TokenHashAlreadyExists",
     "type": "error"
   },
   {
@@ -105,6 +64,31 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "root",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "MerkleRootAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "previousOwner",
         "type": "address"
@@ -118,32 +102,6 @@
     ],
     "name": "OwnershipTransferred",
     "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "verifier",
-        "type": "address"
-      }
-    ],
-    "name": "revokeVerifier",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   },
   {
     "anonymous": false,
@@ -184,43 +142,19 @@
     "type": "event"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes",
-        "name": "token",
-        "type": "bytes"
-      }
-    ],
-    "name": "verifyZKPVisa",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "success",
-        "type": "bool"
-      },
-      {
-        "internalType": "string",
-        "name": "passportNumber",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
         "indexed": true,
-        "internalType": "bytes32",
-        "name": "tokenHash",
-        "type": "bytes32"
+        "internalType": "uint256",
+        "name": "commitment",
+        "type": "uint256"
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "passportNumber",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "merkleRootIndex",
+        "type": "uint256"
       },
       {
         "indexed": false,
@@ -237,9 +171,9 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "bytes32",
-        "name": "tokenHash",
-        "type": "bytes32"
+        "internalType": "uint256",
+        "name": "commitment",
+        "type": "uint256"
       },
       {
         "indexed": true,
@@ -262,6 +196,42 @@
     ],
     "name": "ZKPVisaVerified",
     "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "root",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "credentialCount",
+        "type": "uint256"
+      }
+    ],
+    "name": "addMerkleRoot",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "verifier",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "nickname",
+        "type": "string"
+      }
+    ],
+    "name": "addVerifier",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "inputs": [],
@@ -289,17 +259,17 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "uint256",
         "name": "",
-        "type": "bytes32"
+        "type": "uint256"
       }
     ],
     "name": "credentials",
     "outputs": [
       {
-        "internalType": "string",
-        "name": "passportNumber",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "commitment",
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -315,6 +285,24 @@
         "internalType": "bool",
         "name": "exists",
         "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "merkleRootIndex",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "currentMerkleRootIndex",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -325,9 +313,39 @@
     "name": "getAllIssuedCredentials",
     "outputs": [
       {
-        "internalType": "bytes32[]",
-        "name": "credentialHashes",
-        "type": "bytes32[]"
+        "internalType": "uint256[]",
+        "name": "commitments",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAllMerkleRoots",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "root",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "credentialCount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct ZKPVisaPermanent.MerkleRoot[]",
+        "name": "roots",
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -340,9 +358,9 @@
       {
         "components": [
           {
-            "internalType": "bytes32",
-            "name": "credentialHash",
-            "type": "bytes32"
+            "internalType": "uint256",
+            "name": "commitment",
+            "type": "uint256"
           },
           {
             "internalType": "address",
@@ -360,7 +378,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct ZKPVisa.VerificationLog[]",
+        "internalType": "struct ZKPVisaPermanent.VerificationLog[]",
         "name": "logs",
         "type": "tuple[]"
       }
@@ -397,46 +415,13 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "passportNumber",
-        "type": "string"
-      }
-    ],
-    "name": "getCredentialDetails",
+    "inputs": [],
+    "name": "getCurrentMerkleRoot",
     "outputs": [
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "passportNumber",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "issuedAt",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "used",
-            "type": "bool"
-          },
-          {
-            "internalType": "bool",
-            "name": "exists",
-            "type": "bool"
-          }
-        ],
-        "internalType": "struct ZKPVisa.ZKPVisaCredential",
-        "name": "credential",
-        "type": "tuple"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "tokenHash",
-        "type": "bytes32"
+        "internalType": "uint256",
+        "name": "root",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -459,6 +444,29 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "commitment",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "documentVerified",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "paymentConfirmed",
+        "type": "bool"
+      }
+    ],
+    "name": "issueZKPVisa",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
@@ -466,9 +474,38 @@
     "name": "issuedCredentials",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "uint256",
         "name": "",
-        "type": "bytes32"
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "merkleRoots",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "root",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "credentialCount",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -490,6 +527,32 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "verifier",
+        "type": "address"
+      }
+    ],
+    "name": "revokeVerifier",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
@@ -498,9 +561,9 @@
     "name": "verificationLogs",
     "outputs": [
       {
-        "internalType": "bytes32",
-        "name": "credentialHash",
-        "type": "bytes32"
+        "internalType": "uint256",
+        "name": "commitment",
+        "type": "uint256"
       },
       {
         "internalType": "address",
@@ -567,6 +630,40 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[2]",
+        "name": "a",
+        "type": "uint256[2]"
+      },
+      {
+        "internalType": "uint256[2][2]",
+        "name": "b",
+        "type": "uint256[2][2]"
+      },
+      {
+        "internalType": "uint256[2]",
+        "name": "c",
+        "type": "uint256[2]"
+      },
+      {
+        "internalType": "uint256[2]",
+        "name": "publicSignals",
+        "type": "uint256[2]"
+      }
+    ],
+    "name": "verifyZKPVisa",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

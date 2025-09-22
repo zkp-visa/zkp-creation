@@ -15,6 +15,7 @@ export default function ProverPage() {
   const [userData, setUserData] = useState<UserData>({
     passportNumber: "",
     nickname: "",
+    duration: 5,
   });
   const [documentVerified, setDocumentVerified] = useState(false);
   const [credential, setCredential] = useState<ZKPCredential | null>(null);
@@ -37,6 +38,7 @@ export default function ProverPage() {
     setUserData({
       passportNumber: "",
       nickname: "",
+      duration: 5,
     });
     setDocumentVerified(false);
     setCredential(null);

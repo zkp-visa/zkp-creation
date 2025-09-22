@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import { contract_address } from "../../smart_contract/contract_address";
 import contractABI from "../../smart_contract/abi.json";
 import { Verifier } from "../types";
+import { createUserCommitment } from "../utils/hashUtils";
 
 // Smart contract interaction service
 export class BlockchainService {
@@ -208,23 +209,38 @@ export class BlockchainService {
   // Issue ZKP Visa credential
   async issueZKPVisa(
     passportNumber: string,
-    tokenHash: string,
+    nickname: string,
+    duration: number,
     documentVerified: boolean = true,
     paymentConfirmed: boolean = true
-  ): Promise<string> {
+  ): Promise<{ txHash: string; commitment: string; salt: string }> {
     if (!this.contract) {
       throw new Error("Blockchain service not initialized");
     }
 
     try {
-      const tx = await this.contract.issueZKPVisa(
+      // Generate commitment hash from user data
+      const { commitment, salt } = createUserCommitment({
         passportNumber,
-        tokenHash,
+        nickname,
+        duration,
+      });
+
+      console.log("Generated commitment:", commitment);
+      console.log("Generated salt:", salt);
+
+      const tx = await this.contract.issueZKPVisa(
+        commitment, // Use commitment instead of raw passport number
         documentVerified,
         paymentConfirmed
       );
       await tx.wait(); // Wait for transaction confirmation
-      return tx.hash;
+
+      return {
+        txHash: tx.hash,
+        commitment,
+        salt,
+      };
     } catch (error: unknown) {
       console.error("Error issuing ZKP Visa:", error);
 
@@ -240,7 +256,7 @@ export class BlockchainService {
             throw new Error(
               "Payment must be confirmed before issuing credential"
             );
-          case "TokenHashAlreadyExists":
+          case "CredentialNotFound":
             throw new Error("This credential has already been issued");
           case "NotOwner":
             throw new Error("Only the contract owner can issue credentials");
